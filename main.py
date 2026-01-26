@@ -8,7 +8,6 @@ ui.add_head_html('<title>Employee Dashboard</title>')
 
 # ================= DATA =================
 employees = get_employees()
-
 FUNCTIES = ['HR', 'Developer', 'Designer', 'Marketing', 'Project manager']
 
 # ================= HELPERS =================
@@ -31,7 +30,7 @@ def validate_date(d):
     return True
 
 # ================= TITLE =================
-ui.label('Who is Who').classes('text-2xl font-bold mb-6 text-center w-full')
+ui.label('Employee List').classes('text-2xl font-bold mb-6 text-center w-full')
 
 # ================= GRID =================
 with ui.grid().classes(
@@ -39,17 +38,12 @@ with ui.grid().classes(
 ) as grid:
     pass
 
-# ================= CRUD =================
+# ================= SAVE =================
 def save_all():
     save_employees(employees)
     show_employees()
 
-def delete_employee(emp_id):
-    global employees
-    employees = [e for e in employees if e['id'] != emp_id]
-    save_all()
-
-# ================= DELETE CONFIRM =================
+# ================= DELETE =================
 delete_dialog = ui.dialog()
 delete_id = None
 
@@ -64,6 +58,11 @@ with delete_dialog, ui.card():
             on_click=lambda: (delete_employee(delete_id), delete_dialog.close())
         )
 
+def delete_employee(emp_id):
+    global employees
+    employees = [e for e in employees if e['id'] != emp_id]
+    save_all()
+
 def ask_delete(emp_id):
     global delete_id
     delete_id = emp_id
@@ -73,18 +72,33 @@ def ask_delete(emp_id):
 edit_dialog = ui.dialog()
 current = None
 
-with edit_dialog, ui.card():
+with edit_dialog, ui.card().classes('w-96'):
     ui.label('Medewerker bewerken').classes('text-lg font-bold')
 
-    naam_i = ui.input('Naam')
-    functie_i = ui.select(FUNCTIES, label='Functie')
-    expertise_i = ui.input('Expertise')
-    geboorte_i = ui.date('Geboortedatum')
-    start_i = ui.date('Datum indienst')
-    actief_i = ui.checkbox('Actief')
-    jaren_i = ui.number('Aantal jaren', min=0, max=55)
+    naam_i = ui.input('Naam').classes('w-full')
+    functie_i = ui.select(FUNCTIES, label='Functie').classes('w-full')
+    expertise_i = ui.input('Expertise').classes('w-full')
 
-    ui.button('Opslaan', on_click=lambda: save_edit()).classes('mt-4')
+    # 👉 Datumvelden gecentreerd
+    with ui.column().classes('items-center w-full'):
+        geboorte_i = ui.date('Geboortedatum').classes('w-64')
+        start_i = ui.date('Datum indienst').classes('w-64')
+
+    actief_i = ui.checkbox('Actief')
+
+    jaren_i = ui.number(
+        'Aantal jaren ervaring',
+        min=0,
+        max=55,
+        step=1,
+        format='%.0f'
+    ).props('outlined').classes('w-full')
+
+    ui.label(
+        'Aantal volledige jaren dat de medewerker in dienst is (0–55).'
+    ).classes('text-sm text-gray-500 -mt-3')
+
+    ui.button('Opslaan', on_click=lambda: save_edit()).classes('mt-4 w-full')
 
 def open_edit(e):
     global current
@@ -117,18 +131,33 @@ def save_edit():
 # ================= NEW =================
 new_dialog = ui.dialog()
 
-with new_dialog, ui.card():
+with new_dialog, ui.card().classes('w-96'):
     ui.label('Nieuwe medewerker').classes('text-lg font-bold')
 
-    n_naam = ui.input('Naam')
-    n_functie = ui.select(FUNCTIES, label='Functie')
-    n_expertise = ui.input('Expertise')
-    n_geboorte = ui.date('Geboortedatum')
-    n_start = ui.date('Datum indienst')
-    n_actief = ui.checkbox('Actief', value=True)
-    n_jaren = ui.number('Aantal jaren', min=0, max=55)
+    n_naam = ui.input('Naam').classes('w-full')
+    n_functie = ui.select(FUNCTIES, label='Functie').classes('w-full')
+    n_expertise = ui.input('Expertise').classes('w-full')
 
-    ui.button('Opslaan', on_click=lambda: save_new()).classes('mt-4')
+    # 👉 Datumvelden gecentreerd
+    with ui.column().classes('items-center w-full'):
+        n_geboorte = ui.date('Geboortedatum').classes('w-64')
+        n_start = ui.date('Datum indienst').classes('w-64')
+
+    n_actief = ui.checkbox('Actief', value=True)
+
+    n_jaren = ui.number(
+        'Aantal jaren ervaring',
+        min=0,
+        max=55,
+        step=1,
+        format='%.0f'
+    ).props('outlined').classes('w-full')
+
+    ui.label(
+        'Aantal volledige jaren dat de medewerker in dienst is (0–55).'
+    ).classes('text-sm text-gray-500 -mt-3')
+
+    ui.button('Opslaan', on_click=lambda: save_new()).classes('mt-4 w-full')
 
 def save_new():
     if not (validate_date(n_geboorte.value) and validate_date(n_start.value)):
@@ -159,22 +188,27 @@ def show_employees():
         border = 'border-green-500' if actief else 'border-red-500'
         name_color = 'text-green-600' if actief else 'text-red-600'
 
+        # ===== Strakke card =====
         with grid:
-            with ui.column().classes(f'p-4 border rounded shadow {border}'):
-                ui.label(e['naam']).classes(f'text-lg font-bold {name_color}')
-                ui.label(f"Functie: {e['functie']}")
-                ui.label(f"Expertise: {e['expertise']}")
-                ui.label(f"Geboortedatum: {to_str(e['geboortedatum'])}")
-                ui.label(f"Datum indienst: {to_str(e['datum_indienst'])}")
-                ui.label(f"Actief: {'Ja' if actief else 'Nee'}")
-                ui.label(f"Aantal jaren: {e['jaren']}")
+            with ui.column().classes(f'p-4 border rounded-lg shadow-md {border} bg-white'):
+                
+                # Naam + status in 1 rij
+                with ui.row().classes('items-center justify-between'):
+                    ui.label(e['naam']).classes(f'text-xl font-bold {name_color}')
+                    ui.label('Actief' if actief else 'Niet actief').classes(f'font-semibold {name_color}')
 
-                ui.button('Edit', on_click=lambda emp=e: open_edit(emp))
-                ui.button(
-                    'Delete',
-                    color='red',
-                    on_click=lambda emp_id=e['id']: ask_delete(emp_id)
-                )
+                # Functie + expertise subtieler
+                ui.label(f"{e['functie']} – {e['expertise']}").classes('text-gray-700 mb-1')
+
+                # Datum & jaren in kleinere letters
+                ui.label(f"Geboortedatum: {to_str(e['geboortedatum'])}").classes('text-sm text-gray-500')
+                ui.label(f"Datum indienst: {to_str(e['datum_indienst'])}").classes('text-sm text-gray-500')
+                ui.label(f"Aantal jaren: {e['jaren']}").classes('text-sm text-gray-500 mb-2')
+
+                # Buttons in rij rechts uitgelijnd
+                with ui.row().classes('justify-end gap-2 mt-2'):
+                    ui.button('Edit', on_click=lambda emp=e: open_edit(emp)).props('color="blue" flat')
+                    ui.button('Delete', color='red', on_click=lambda emp_id=e['id']: ask_delete(emp_id))
 
 # ================= STICKY BUTTON =================
 ui.button(
