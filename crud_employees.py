@@ -29,7 +29,7 @@ def employee_tab(parent):
     with ui.column().bind_visibility_from(parent, 'value', lambda v: v == 'Employees')\
             .classes('items-center w-full'):
 
-        ui.label('Employee List').classes('text-2xl font-bold mb-6 text-center')
+        ui.label('Werknemerslijst').classes('text-2xl font-bold mb-6 text-center')
 
         # Grid
         with ui.grid().classes(

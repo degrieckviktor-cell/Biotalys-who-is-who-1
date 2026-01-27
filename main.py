@@ -30,7 +30,7 @@ with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
     )
 
     # Subtitel
-    ui.label("Welkom op het Biotalys Employee Dashboard!").classes(
+    ui.label("Welkom op het Biotalys Werknemers Dashboard!").classes(
         'text-2xl font-semibold text-center mb-2 text-gray-800'
     )
     ui.label("Gebruik de tabs bovenaan om medewerkers en functies te bekijken.").classes(

@@ -10,7 +10,7 @@ def functions_tab(parent):
             .classes('items-center w-full'):
 
         # Titel gecentreerd
-        ui.label('Employees per functie').classes('text-2xl font-bold mb-6 text-center')
+        ui.label('Werknemers per functie').classes('text-2xl font-bold mb-6 text-center')
 
         # Grid voor functie-kaarten, horizontaal gecentreerd
         with ui.grid().classes(
