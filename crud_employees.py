@@ -1,5 +1,5 @@
 from nicegui import ui
-from data_source import get_employees, insert_employee, update_employee, delete_employee
+from data_source import get_employees, insert_employee, update_employee, delete_employee, get_functies
 from datetime import datetime, date
 
 # ================= BUTTON STYLES =================
@@ -10,9 +10,7 @@ BTN_DANGER = '!bg-red-600 !text-white hover:!bg-red-700 rounded-lg'
 BTN_SMALL = 'px-4 py-2'
 BTN_FULL = 'w-full px-4 py-2'
 
-
 def employee_tab(parent):
-    FUNCTIES = ['HR', 'Developer', 'Designer', 'Marketing', 'Project manager']
 
     # ---------- Helpers ----------
     def to_date(d):
@@ -27,11 +25,63 @@ def employee_tab(parent):
     def to_str(d):
         return to_date(d).strftime('%Y-%m-%d')
 
+    def get_fun_options():
+        return [f['naam'] for f in get_functies()]
+
     # ================= TAB CONTENT =================
     with ui.column().bind_visibility_from(parent, 'value', lambda v: v == 'Employees')\
-            .classes('items-center w-full'):
+            .classes('items-center w-full mt-6'):
+
+        # ---------- Nonlocal vars ----------
+        current = None
+        employees = get_employees()
 
         # ================= POPUPS =================
+        # ---------- Edit Dialog ----------
+        edit_dialog = ui.dialog()
+        with edit_dialog, ui.card().classes('w-[500px] max-h-[80vh] overflow-auto p-0'):
+            with ui.row().classes('bg-green-600 text-white p-4 justify-center'):
+                ui.label('Werknemer bewerken').classes('text-xl font-bold')
+
+            with ui.column().classes('p-6 gap-3 items-center'):
+                naam = ui.input('Naam').classes('w-full')
+                functie = ui.select([], label='Functie').classes('w-full')
+                expertise = ui.input('Expertise').classes('w-full')
+                email = ui.input('Email').classes('w-full')
+                location = ui.input('Location').classes('w-full')
+                language = ui.input('Language').classes('w-full')
+                work_groups = ui.input('Work groups').classes('w-full')
+                hobbies = ui.input('Hobbies').classes('w-full')
+                mobile_phone = ui.input('Mobile phone').classes('w-full')
+                office_phone = ui.input('Office phone').classes('w-full')
+                geboorte = ui.date('Geboortedatum').classes('w-full')
+                start = ui.date('Datum indienst').classes('w-full')
+                jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
+                actief = ui.checkbox('Actief')
+
+                def save_edit():
+                    current.update({
+                        'naam': naam.value,
+                        'functie': functie.value,
+                        'expertise': expertise.value,
+                        'email': email.value,
+                        'location': location.value,
+                        'language': language.value,
+                        'work_groups': work_groups.value,
+                        'hobbies': hobbies.value,
+                        'mobile_phone': mobile_phone.value,
+                        'office_phone': office_phone.value,
+                        'geboortedatum': to_str(geboorte.value),
+                        'datum_indienst': to_str(start.value),
+                        'jaren': int(jaren.value or 0),
+                        'actief': actief.value,
+                    })
+                    update_employee(current)
+                    refresh()
+                    edit_dialog.close()
+
+                ui.button('Opslaan', on_click=save_edit).classes(f'{BTN_PRIMARY} {BTN_FULL} mt-4')
+
         # ---------- New Employee Dialog ----------
         new_dialog = ui.dialog()
         with new_dialog, ui.card().classes('w-[500px] max-h-[80vh] overflow-auto p-0'):
@@ -40,7 +90,7 @@ def employee_tab(parent):
 
             with ui.column().classes('p-6 gap-3 items-center'):
                 n_naam = ui.input('Naam').classes('w-full')
-                n_functie = ui.select(FUNCTIES, label='Functie').classes('w-full')
+                n_functie = ui.select(get_fun_options(), label='Functie').classes('w-full')
                 n_expertise = ui.input('Expertise').classes('w-full')
                 n_email = ui.input('Email').classes('w-full')
                 n_location = ui.input('Location').classes('w-full')
@@ -76,77 +126,14 @@ def employee_tab(parent):
                     new_dialog.close()
                     ui.notify('Nieuwe medewerker toegevoegd!', color='green')
 
-                ui.button('Opslaan', on_click=save_new_employee).classes(
-                    f'mt-4 {BTN_PRIMARY} {BTN_FULL}'
-                )
+                ui.button('Opslaan', on_click=save_new_employee).classes(f'{BTN_PRIMARY} {BTN_FULL} mt-4')
 
-        # ---------- Edit Dialog ----------
-        edit_dialog = ui.dialog()
-        current = None
-        with edit_dialog, ui.card().classes('w-[500px] max-h-[80vh] overflow-auto p-0'):
-            with ui.row().classes('bg-green-600 text-white p-4 justify-center'):
-                ui.label('Werknemer bewerken').classes('text-xl font-bold')
-
-            with ui.column().classes('p-6 gap-3 items-center'):
-                naam = ui.input('Naam').classes('w-full')
-                functie = ui.select(FUNCTIES, label='Functie').classes('w-full')
-                expertise = ui.input('Expertise').classes('w-full')
-                email = ui.input('Email').classes('w-full')
-                location = ui.input('Location').classes('w-full')
-                language = ui.input('Language').classes('w-full')
-                work_groups = ui.input('Work groups').classes('w-full')
-                hobbies = ui.input('Hobbies').classes('w-full')
-                mobile_phone = ui.input('Mobile phone').classes('w-full')
-                office_phone = ui.input('Office phone').classes('w-full')
-                geboorte = ui.date('Geboortedatum').classes('w-full')
-                start = ui.date('Datum indienst').classes('w-full')
-                jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
-                actief = ui.checkbox('Actief')
-
-                def save_edit():
-                    current.update({
-                        'naam': naam.value,
-                        'functie': functie.value,
-                        'expertise': expertise.value,
-                        'email': email.value,
-                        'location': location.value,
-                        'language': language.value,
-                        'work_groups': work_groups.value,
-                        'hobbies': hobbies.value,
-                        'mobile_phone': mobile_phone.value,
-                        'office_phone': office_phone.value,
-                        'geboortedatum': to_str(geboorte.value),
-                        'datum_indienst': to_str(start.value),
-                        'jaren': int(jaren.value or 0),
-                        'actief': actief.value,
-                    })
-                    update_employee(current)
-                    refresh()
-                    edit_dialog.close()
-
-                ui.button('Opslaan', on_click=save_edit).classes(
-                    f'mt-4 {BTN_PRIMARY} {BTN_FULL}'
-                )
-
-        # ================= TOPBAR =================
-        with ui.row().classes('w-full max-w-7xl justify-between items-center mb-6'):
-            ui.label('Werknemerslijst').classes('text-2xl font-bold')
-
-            with ui.row().classes('items-center gap-2'):
-                search_input = ui.input(placeholder='Zoek werknemer...').classes(
-                    'w-64 transition-all duration-500 ease-in-out rounded-full px-4'
-                )
-                ui.button('Zoek', on_click=lambda: filter_employees()).classes(
-                    f'{BTN_SECONDARY} {BTN_SMALL}'
-                )
-                ui.button('Reset', on_click=lambda: reset_employees()).classes(
-                    f'{BTN_NEUTRAL} {BTN_SMALL}'
-                )
-
+        # ================= OPEN EDIT FUNCTION =================
         def open_edit(e):
             nonlocal current
             current = e
             naam.value = e['naam']
+            functie.options = get_fun_options()
             functie.value = e['functie']
             expertise.value = e['expertise']
             email.value = e.get('email', '')
@@ -162,8 +149,24 @@ def employee_tab(parent):
             actief.value = e.get('actief', True)
             edit_dialog.open()
 
+        # ================= REFRESH =================
+        def refresh():
+            nonlocal employees
+            employees = get_employees()
+            filter_employees()
+
+        # ================= TOPBAR =================
+        with ui.row().classes('w-full max-w-7xl justify-between items-center mb-6'):
+            ui.label('Werknemerslijst').classes('text-2xl font-bold')
+
+            with ui.row().classes('items-center gap-2'):
+                search_input = ui.input(placeholder='Zoek werknemer...').classes(
+                    'w-64 transition-all duration-500 ease-in-out rounded-full px-4'
+                )
+                ui.button('Zoek', on_click=lambda: filter_employees()).classes(f'{BTN_SECONDARY} {BTN_SMALL}')
+                ui.button('Reset', on_click=lambda: reset_employees()).classes(f'{BTN_NEUTRAL} {BTN_SMALL}')
+
         # ================= GRID =================
-        employees = get_employees()
         with ui.grid().classes(
             'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center max-w-7xl'
         ) as grid:
@@ -234,34 +237,14 @@ def employee_tab(parent):
                         ui.label(value or '-')
 
                 with ui.row().classes('justify-end gap-3 p-4 border-t'):
-                    ui.button(
-                        'Bewerken',
-                        on_click=lambda emp=e: (dialog.close(), open_edit(emp))
-                    ).classes(f'{BTN_PRIMARY} {BTN_SMALL}')
-
-                    ui.button(
-                        'Verwijderen',
-                        on_click=lambda emp=e: (dialog.close(), delete_employee(emp['id']), refresh())
-                    ).classes(f'{BTN_DANGER} {BTN_SMALL}')
-
-                    ui.button(
-                        'Sluiten',
-                        on_click=dialog.close
-                    ).classes(f'{BTN_NEUTRAL} {BTN_SMALL}')
+                    ui.button('Bewerken', on_click=lambda emp=e: (dialog.close(), open_edit(emp))).classes(f'{BTN_PRIMARY} {BTN_SMALL}')
+                    ui.button('Verwijderen', on_click=lambda emp=e: (dialog.close(), delete_employee(emp['id']), refresh())).classes(f'{BTN_DANGER} {BTN_SMALL}')
+                    ui.button('Sluiten', on_click=dialog.close).classes(f'{BTN_NEUTRAL} {BTN_SMALL}')
 
             dialog.open()
 
-        # ================= REFRESH =================
-        def refresh():
-            nonlocal employees
-            employees = get_employees()
-            filter_employees()
-
         # ================= FLOATING NEW EMPLOYEE BUTTON =================
-        ui.button(
-            '+ Nieuwe medewerker',
-            on_click=new_dialog.open
-        ).classes(
+        ui.button('+ Nieuwe medewerker', on_click=new_dialog.open).classes(
             'fixed bottom-6 right-6 '
             '!bg-gradient-to-r from-emerald-600 to-green-700 '
             '!text-white font-semibold px-5 py-2.5 '
@@ -269,4 +252,3 @@ def employee_tab(parent):
             'hover:from-emerald-700 hover:to-green-800 '
             'transition-all duration-200'
         )
-

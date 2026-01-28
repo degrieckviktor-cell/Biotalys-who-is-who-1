@@ -16,11 +16,12 @@ with ui.row().classes(
         ui.tab('Functions').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
 
     ui.button(
-        '🔄',
-        on_click=lambda: ui.run_javascript('location.reload()')
-    ).classes(
-        '!bg-gradient-to-r from-emerald-600 to-green-700 !text-white px-3 py-2 text-sm rounded-xl hover:from-emerald-700 hover:to-green-800 mr-2 transition-all duration-200'
-    )
+    '🔄',
+    on_click=lambda: ui.run_javascript('location.reload()')
+).classes(
+    '!bg-gray-200 !text-gray-800 hover:!bg-gray-300 px-3 py-2 text-sm rounded-xl mr-2 transition-all duration-200'
+)
+
 
 # ================== HOME TAB ==================
 with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
@@ -40,9 +41,13 @@ with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
     )
 
     # Statistiek-kaarten
+    from data_source import get_functies
+
     employees = get_employees()
     totaal = len(employees)
-    functies = set(e['functie'] for e in employees)
+
+    functies = get_functies()  # haalt nu alle functies uit de functies-tabel
+    aantal_functies = len(functies)
 
     with ui.row().classes('gap-6 justify-center'):
         with ui.card().classes('p-4 w-48 bg-blue-100 rounded shadow'):
@@ -51,7 +56,8 @@ with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
 
         with ui.card().classes('p-4 w-48 bg-blue-100 rounded shadow'):
             ui.label('Aantal functies').classes('text-center font-semibold text-gray-800')
-            ui.label(f"{len(functies)}").classes('text-center text-xl font-bold text-gray-900')
+            ui.label(f"{aantal_functies}").classes('text-center text-xl font-bold text-gray-900')
+
 
 # ================== EMPLOYEES TAB ==================
 employee_tab(tabs)  # Nieuwe medewerker knop alleen hier zichtbaar

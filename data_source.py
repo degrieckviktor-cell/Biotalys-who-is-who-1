@@ -159,3 +159,30 @@ def delete_employee(emp_id):
                 (emp_id,)
             )
             conn.commit()
+# ---------- FUNCTIES CRUD ----------
+def update_functie(functie_id, nieuwe_naam):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE functies SET naam=%s WHERE id=%s",
+                (nieuwe_naam, functie_id)
+            )
+            conn.commit()
+
+
+def delete_functie(functie_id):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM functies WHERE id=%s",
+                (functie_id,)
+            )
+            conn.commit()
+def insert_functie(naam):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO functies (naam) VALUES (%s)",
+                (naam,)
+            )
+            conn.commit()
