@@ -1,0 +1,107 @@
+/* Globale.css - volledig geoptimaliseerd voor NiceGUI */
+
+/* -------- Pagina achtergrond -------- */
+#app, .nicegui-body {
+    background-color: #f5f5f7 !important; /* lichtgrijs */
+    min-height: 100vh !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #1f2937 !important; /* donkergrijze tekst */
+}
+
+/* -------- Kaarten -------- */
+.nicegui-card, .card {
+    background-color: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+}
+
+.nicegui-card:hover, .card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15) !important;
+}
+
+/* -------- Knoppen -------- */
+button, .nicegui-button {
+    font-weight: 600 !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Primary (groen) */
+.btn-primary, .btn-emerald {
+    background-color: #10b981 !important;
+    color: white !important;
+}
+.btn-primary:hover, .btn-emerald:hover {
+    background-color: #059669 !important;
+}
+
+/* Danger (rood) */
+.btn-danger, .btn-red {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+.btn-danger:hover, .btn-red:hover {
+    background-color: #dc2626 !important;
+}
+
+/* Neutral (grijs) */
+.btn-neutral, .btn-gray {
+    background-color: #e5e7eb !important;
+    color: #374151 !important;
+}
+.btn-neutral:hover, .btn-gray:hover {
+    background-color: #d1d5db !important;
+}
+
+/* -------- Inputs & Selects -------- */
+input, select, .nicegui-input {
+    border-radius: 8px !important;
+    border: 1px solid #d1d5db !important;
+    padding: 0.5rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* -------- Headers -------- */
+h1, h2, h3, .text-xl, .text-2xl {
+    font-weight: 700 !important;
+    color: #111827 !important;
+}
+
+/* -------- Popups / Dialogs -------- */
+.nicegui-dialog-card, .dialog-card {
+    border-radius: 12px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background-color: white !important;
+}
+
+/* Scrollable popups */
+.scrollable-dialog {
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+}
+
+/* -------- Grid spacing -------- */
+.grid, .nicegui-grid {
+    gap: 1.5rem !important;
+}
+
+/* -------- Labels in details popup -------- */
+.details-label {
+    font-weight: 600 !important;
+}
+
+/* -------- Floating buttons -------- */
+.floating-btn {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    transition: all 0.2s !important;
+}
+.floating-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+}

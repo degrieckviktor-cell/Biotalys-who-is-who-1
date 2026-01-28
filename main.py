@@ -2,7 +2,7 @@ from nicegui import ui
 from crud_employees import employee_tab
 from crud_functions import functions_tab
 from data_source import get_employees
-
+ui.add_head_html('<link rel="stylesheet" href="Globale.css">')
 # ================== PAGE TITLE ==================
 ui.add_head_html('<title>Biotalys Employee Dashboard</title>')
 
