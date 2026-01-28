@@ -95,4 +95,18 @@ def delete_employee(emp_id):
             )
             conn.commit()
 
+# ================= READ FUNCTIES =================
+def get_functies():
+    """
+    Haal alle functies op.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, naam
+                FROM functies
+                ORDER BY naam
+            """)
+            return cur.fetchall()
+        
 
