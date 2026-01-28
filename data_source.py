@@ -123,7 +123,7 @@ def update_employee(employee):
                     jaren = %s,
                     email = %s,
                     location = %s,
-                    languages = %s,
+                    language = %s,
                     hobbies = %s,
                     work_groups = %s,
                     mobile_phone = %s,
@@ -147,6 +147,7 @@ def update_employee(employee):
                 employee['id'],
             ))
             conn.commit()
+
 
 # ================= DELETE =================
 
