@@ -6,7 +6,7 @@ from datetime import datetime, date
 def employee_tab(parent):
     FUNCTIES = ['HR', 'Developer', 'Designer', 'Marketing', 'Project manager']
 
-    # ---------- HELPERS ----------
+    # ---------- Helpers ----------
     def to_date(d):
         if isinstance(d, date):
             return d
@@ -19,161 +19,220 @@ def employee_tab(parent):
     def to_str(d):
         return to_date(d).strftime('%Y-%m-%d')
 
-    def validate_date(d):
-        if to_date(d) > date.today():
-            ui.notify('Datum kan niet in de toekomst liggen', color='red')
-            return False
-        return True
-
-    # ---------- TAB CONTENT ----------
+    # ================= TAB CONTENT =================
     with ui.column().bind_visibility_from(parent, 'value', lambda v: v == 'Employees')\
             .classes('items-center w-full'):
 
-        ui.label('Werknemerslijst').classes('text-2xl font-bold mb-6 text-center')
+        ui.label('Werknemerslijst').classes('text-2xl font-bold mb-6')
 
+        # ---------- Zoekbalk ----------
+        with ui.row().classes('justify-center mb-6 relative'):
+            search_input = ui.input(placeholder='Zoek werknemer...').classes(
+                'w-10 transition-all duration-300 rounded-full px-2'
+            )
+
+            search_input.on('focus', lambda e: search_input.classes('w-64 px-4'))
+            search_input.on('blur', lambda e: search_input.classes('w-10 px-2'))
+            search_input.on('mouseenter', lambda e: search_input.classes('w-64 px-4'))
+            search_input.on('mouseleave', lambda e: search_input.classes('w-10 px-2'))
+            search_input.props('prefix="🔍"')
+
+        employees = get_employees()
+
+        # ---------- Grid voor kaarten ----------
         with ui.grid().classes(
             'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center max-w-7xl'
         ) as grid:
             pass
 
-        employees = get_employees()
-
-        def refresh():
-            nonlocal employees
-            employees = get_employees()
-            show_employees()
-
-        # ---------- DELETE ----------
-        delete_dialog = ui.dialog()
-        delete_id = None
-        with delete_dialog, ui.card().classes('w-80'):
-            ui.label('⚠️ Werknemer verwijderen').classes('text-lg font-bold')
-            ui.label('Ben je zeker?')
-            with ui.row().classes('justify-end gap-2'):
-                ui.button('Annuleren', on_click=delete_dialog.close)
-                ui.button('Verwijderen', color='red',
-                          on_click=lambda: (delete_employee(delete_id), refresh(), delete_dialog.close()))
-
-        def ask_delete(emp_id):
-            nonlocal delete_id
-            delete_id = emp_id
-            delete_dialog.open()
-
-        # ---------- EDIT ----------
-        edit_dialog = ui.dialog()
-        current = None
-        with edit_dialog, ui.card().classes('w-[600px] p-6'):
-            ui.label('Medewerker bewerken').classes('text-xl font-bold mb-4')
-
-            with ui.grid().classes('grid-cols-2 gap-4'):
-                naam_i = ui.input('Naam')
-                functie_i = ui.select(FUNCTIES, label='Functie')
-                email_i = ui.input('Email')
-                location_i = ui.input('Location')
-                language_i = ui.input('Language')
-                mobile_phone_i = ui.input('Mobile phone')
-                office_phone_i = ui.input('Office phone')
-                work_groups_i = ui.input('Work groups')
-                hobbies_i = ui.input('Hobbies')
-                expertise_i = ui.input('Expertise')
-
-                geboorte_i = ui.date('Geboortedatum')
-                start_i = ui.date('Datum indienst')
-                jaren_i = ui.number('Jaren ervaring', min=0, max=55, step=1)
-                actief_i = ui.checkbox('Actief')
-
-            ui.button('Opslaan', on_click=lambda: save_edit())\
-                .classes('mt-4 w-full bg-blue-600 text-white')
-
-        def open_edit(e):
-            nonlocal current
-            current = e
-            naam_i.value = e['naam']
-            functie_i.value = e['functie']
-            expertise_i.value = e['expertise']
-            geboorte_i.value = to_date(e['geboortedatum'])
-            start_i.value = to_date(e['datum_indienst'])
-            actief_i.value = e['actief']
-            jaren_i.value = e['jaren']
-            email_i.value = e.get('email','')
-            location_i.value = e.get('location','')
-            language_i.value = e.get('language','')
-            hobbies_i.value = e.get('hobbies','')
-            work_groups_i.value = e.get('work_groups','')
-            mobile_phone_i.value = e.get('mobile_phone','')
-            office_phone_i.value = e.get('office_phone','')
-            edit_dialog.open()
-
-        def save_edit():
-            if not (validate_date(geboorte_i.value) and validate_date(start_i.value)):
-                return
-            current.update({
-                'naam': naam_i.value,
-                'functie': functie_i.value,
-                'expertise': expertise_i.value,
-                'geboortedatum': to_str(geboorte_i.value),
-                'datum_indienst': to_str(start_i.value),
-                'actief': actief_i.value,
-                'jaren': int(jaren_i.value),
-                'email': email_i.value,
-                'location': location_i.value,
-                'language': language_i.value,
-                'hobbies': hobbies_i.value,
-                'work_groups': work_groups_i.value,
-                'mobile_phone': mobile_phone_i.value,
-                'office_phone': office_phone_i.value
-            })
-            update_employee(current)
-            refresh()
-            edit_dialog.close()
-
-        # ---------- DETAIL POPUP ----------
+        # ================= DETAILS POPUP =================
         def open_details(e):
             dialog = ui.dialog()
-            with dialog, ui.card().classes('w-[700px] p-6'):
-                ui.label(e['naam']).classes('text-2xl font-bold mb-4 text-center')
+            with dialog, ui.card().classes('w-[900px] max-h-[80vh] overflow-auto p-0'):
+                with ui.row().classes('bg-green-600 text-white p-4 justify-center items-center gap-4'):
+                    ui.label(e['naam']).classes('text-2xl font-bold')
+                    ui.label('Actief' if e['actief'] else 'Niet actief').classes(
+                        'text-lg ' + ('text-green-200' if e['actief'] else 'text-red-400')
+                    )
 
-                with ui.grid().classes('grid-cols-2 gap-4 text-sm'):
-                    ui.label(f"Status: {'Actief' if e['actief'] else 'Niet actief'}")
-                    ui.label(f"Functie: {e['functie']}")
-                    ui.label(f"Expertise: {e['expertise']}")
-                    ui.label(f"Jaren ervaring: {e['jaren']}")
-                    ui.label(f"Email: {e.get('email','')}")
-                    ui.label(f"Location: {e.get('location','')}")
-                    ui.label(f"Language: {e.get('language','')}")
-                    ui.label(f"Work groups: {e.get('work_groups','')}")
-                    ui.label(f"Hobbies: {e.get('hobbies','')}")
-                    ui.label(f"Mobile phone: {e.get('mobile_phone','')}")
-                    ui.label(f"Office phone: {e.get('office_phone','')}")
-                    ui.label(f"Geboortedatum: {to_str(e['geboortedatum'])}")
-                    ui.label(f"Datum indienst: {to_str(e['datum_indienst'])}")
+                with ui.grid().classes('grid-cols-2 gap-4 p-6 text-sm'):
+                    items = [
+                        ('🧩 Functie', e['functie']),
+                        ('🕒 Jaren ervaring', e['jaren']),
+                        ('📧 Email', e.get('email')),
+                        ('📍 Location', e.get('location')),
+                        ('🌍 Language', e.get('language')),
+                        ('👥 Work groups', e.get('work_groups')),
+                        ('🎯 Hobbies', e.get('hobbies')),
+                        ('📱 Mobile phone', e.get('mobile_phone')),
+                        ('☎️ Office phone', e.get('office_phone')),
+                        ('🎂 Geboortedatum', to_str(e['geboortedatum'])),
+                        ('🗓️ Datum indienst', to_str(e['datum_indienst'])),
+                        ('💼 Expertise', e['expertise']),
+                    ]
+                    for label, value in items:
+                        ui.label(label).classes('font-semibold')
+                        ui.label(value or '-')
 
-                with ui.row().classes('justify-end gap-3 mt-6'):
+                with ui.row().classes('justify-end gap-3 p-4 border-t'):
                     ui.button('Bewerken', on_click=lambda: (dialog.close(), open_edit(e)))
-                    ui.button('Verwijderen', color='red',
-                              on_click=lambda: (dialog.close(), ask_delete(e['id'])))
+                    ui.button(
+                        'Verwijderen',
+                        color='red',
+                        on_click=lambda: (dialog.close(), delete_employee(e['id']), refresh())
+                    )
                     ui.button('Sluiten', on_click=dialog.close)
 
             dialog.open()
 
-        # ---------- DISPLAY ----------
-        def show_employees():
+        # ================= EDIT POPUP =================
+        edit_dialog = ui.dialog()
+        current = None
+
+        with edit_dialog, ui.card().classes('w-[600px] max-h-[80vh] overflow-auto p-0'):
+            with ui.row().classes('bg-green-600 text-white p-4 justify-center'):
+                ui.label('Werknemer bewerken').classes('text-xl font-bold')
+
+            with ui.column().classes('p-6 gap-3 items-center'):
+                naam = ui.input('Naam').classes('w-full')
+                functie = ui.select(FUNCTIES, label='Functie').classes('w-full')
+                expertise = ui.input('Expertise').classes('w-full')
+                email = ui.input('Email').classes('w-full')
+                location = ui.input('Location').classes('w-full')
+                language = ui.input('Language').classes('w-full')
+                work_groups = ui.input('Work groups').classes('w-full')
+                hobbies = ui.input('Hobbies').classes('w-full')
+                mobile_phone = ui.input('Mobile phone').classes('w-full')
+                office_phone = ui.input('Office phone').classes('w-full')
+                geboorte = ui.date('Geboortedatum').classes('w-full')
+                start = ui.date('Datum indienst').classes('w-full')
+                jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
+                actief = ui.checkbox('Actief')
+
+                def save_edit():
+                    current.update({
+                        'naam': naam.value,
+                        'functie': functie.value,
+                        'expertise': expertise.value,
+                        'email': email.value,
+                        'location': location.value,
+                        'language': language.value,
+                        'work_groups': work_groups.value,
+                        'hobbies': hobbies.value,
+                        'mobile_phone': mobile_phone.value,
+                        'office_phone': office_phone.value,
+                        'geboortedatum': to_str(geboorte.value),
+                        'datum_indienst': to_str(start.value),
+                        'jaren': int(jaren.value or 0),
+                        'actief': actief.value,
+                    })
+                    update_employee(current)
+                    refresh()
+                    edit_dialog.close()
+
+                ui.button('Opslaan', on_click=save_edit).classes('mt-4 w-full bg-green-600 text-white')
+
+        def open_edit(e):
+            nonlocal current
+            current = e
+            naam.value = e['naam']
+            functie.value = e['functie']
+            expertise.value = e['expertise']
+            email.value = e.get('email')
+            location.value = e.get('location')
+            language.value = e.get('language')
+            work_groups.value = e.get('work_groups')
+            hobbies.value = e.get('hobbies')
+            mobile_phone.value = e.get('mobile_phone')
+            office_phone.value = e.get('office_phone')
+            geboorte.value = to_date(e['geboortedatum'])
+            start.value = to_date(e['datum_indienst'])
+            jaren.value = e['jaren']
+            actief.value = e['actief']
+            edit_dialog.open()
+
+        # ================= NEW EMPLOYEE POPUP =================
+        new_dialog = ui.dialog()
+        with new_dialog, ui.card().classes('w-[600px] max-h-[80vh] overflow-auto p-0'):
+            with ui.row().classes('bg-green-600 text-white p-4 justify-center'):
+                ui.label('Nieuwe medewerker').classes('text-xl font-bold')
+
+            with ui.column().classes('p-6 gap-3 items-center'):
+                n_naam = ui.input('Naam').classes('w-full')
+                n_functie = ui.select(FUNCTIES, label='Functie').classes('w-full')
+                n_expertise = ui.input('Expertise').classes('w-full')
+                n_email = ui.input('Email').classes('w-full')
+                n_location = ui.input('Location').classes('w-full')
+                n_language = ui.input('Language').classes('w-full')
+                n_work_groups = ui.input('Work groups').classes('w-full')
+                n_hobbies = ui.input('Hobbies').classes('w-full')
+                n_mobile_phone = ui.input('Mobile phone').classes('w-full')
+                n_office_phone = ui.input('Office phone').classes('w-full')
+                n_geboorte = ui.date('Geboortedatum').classes('w-full')
+                n_start = ui.date('Datum indienst').classes('w-full')
+                n_jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
+                n_actief = ui.checkbox('Actief', value=True)
+
+                def save_new_employee():
+                    new_emp = {
+                        'naam': n_naam.value or '',
+                        'functie': n_functie.value or '',
+                        'expertise': n_expertise.value or '',
+                        'email': n_email.value or '',
+                        'location': n_location.value or '',
+                        'language': n_language.value or '',
+                        'work_groups': n_work_groups.value or '',
+                        'hobbies': n_hobbies.value or '',
+                        'mobile_phone': n_mobile_phone.value or '',
+                        'office_phone': n_office_phone.value or '',
+                        'geboortedatum': to_str(n_geboorte.value) if n_geboorte.value else '1900-01-01',
+                        'datum_indienst': to_str(n_start.value) if n_start.value else '1900-01-01',
+                        'jaren': int(n_jaren.value or 0),
+                        'actief': n_actief.value,
+                    }
+                    insert_employee(new_emp)
+                    refresh()
+                    new_dialog.close()
+                    ui.notify('Nieuwe medewerker toegevoegd!', color='green')
+
+                ui.button('Opslaan', on_click=save_new_employee).classes('mt-4 w-full bg-green-600 text-white')
+
+        # ================= CARDS =================
+        def show_employees(employee_list=None):
             grid.clear()
-            for e in employees:
-                kleur = 'border-green-500' if e['actief'] else 'border-red-500'
-                text = 'text-green-600' if e['actief'] else 'text-red-600'
+            data = employee_list or employees
+            for e in data:
+                actief = e['actief']
+                kleur = 'text-green-600' if actief else 'text-red-600'
+                border = 'border-green-500' if actief else 'border-red-500'
 
                 with grid:
-                    with ui.card().classes(
-                        f'w-64 p-4 border-2 rounded shadow items-center {kleur}'
-                    ):
-                        ui.label(e['naam']).classes(f'text-lg font-bold {text} text-center')
-                        ui.label('Actief' if e['actief'] else 'Niet actief')\
-                            .classes(f'text-sm {text} text-center')
+                    with ui.card().classes(f'w-64 p-4 border-2 rounded shadow {border}'):
+                        ui.label(e['naam']).classes('text-lg font-bold text-center')
+                        ui.label('Actief' if actief else 'Niet actief').classes(f'text-sm {kleur} text-center')
                         ui.label(e['functie']).classes('text-sm text-center')
                         ui.label(f"{e['jaren']} jaar ervaring").classes('text-sm text-center')
-
-                        ui.button('Details', on_click=lambda emp=e: open_details(emp))\
-                            .classes('mt-3 w-full')
+                        ui.button(
+                            'Details',
+                            on_click=lambda emp=e: open_details(emp)
+                        ).classes('mt-3 w-full')
 
         show_employees()
+
+        # ================= FLOATING NEW BUTTON =================
+        ui.button(
+            '+ Nieuwe medewerker',
+            on_click=new_dialog.open
+        ).bind_visibility_from(parent, 'value', lambda v: v == 'Employees')\
+         .classes(
+            'fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 '
+            'rounded-full shadow-lg hover:bg-green-700 z-50'
+        )
+
+        # ================= ZOEKFUNCTIE =================
+        def filter_employees():
+            query = search_input.value.lower()
+            filtered = [e for e in employees if query in e['naam'].lower()]
+            show_employees(filtered)
+
+        search_input.on('input', lambda e: filter_employees())

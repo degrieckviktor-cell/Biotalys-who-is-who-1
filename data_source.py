@@ -85,7 +85,7 @@ def insert_employee(employee):
             cur.execute("""
                 INSERT INTO employees (
                     naam, functie, expertise, geboortedatum, datum_indienst,
-                    actief, jaren, email, location, languages, hobbies,
+                    actief, jaren, email, location, language, hobbies,
                     work_groups, mobile_phone, office_phone
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
