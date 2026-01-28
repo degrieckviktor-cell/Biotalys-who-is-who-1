@@ -2,6 +2,15 @@ from nicegui import ui
 from data_source import get_employees, insert_employee, update_employee, delete_employee
 from datetime import datetime, date
 
+# ================= BUTTON STYLES =================
+BTN_PRIMARY = '!bg-green-700 !text-white hover:!bg-green-800 rounded-lg'
+BTN_SECONDARY = '!bg-emerald-600 !text-white hover:!bg-emerald-700 rounded-lg'
+BTN_NEUTRAL = '!bg-gray-200 !text-gray-800 hover:!bg-gray-300 rounded-lg'
+BTN_DANGER = '!bg-red-600 !text-white hover:!bg-red-700 rounded-lg'
+BTN_SMALL = 'px-4 py-2'
+BTN_FULL = 'w-full px-4 py-2'
+
+
 def employee_tab(parent):
     FUNCTIES = ['HR', 'Developer', 'Designer', 'Marketing', 'Project manager']
 
@@ -67,7 +76,9 @@ def employee_tab(parent):
                     new_dialog.close()
                     ui.notify('Nieuwe medewerker toegevoegd!', color='green')
 
-                ui.button('Opslaan', on_click=save_new_employee).classes('mt-4 w-full bg-green-600 text-white')
+                ui.button('Opslaan', on_click=save_new_employee).classes(
+                    f'mt-4 {BTN_PRIMARY} {BTN_FULL}'
+                )
 
         # ---------- Edit Dialog ----------
         edit_dialog = ui.dialog()
@@ -113,24 +124,43 @@ def employee_tab(parent):
                     refresh()
                     edit_dialog.close()
 
-                ui.button('Opslaan', on_click=save_edit).classes('mt-4 w-full bg-green-600 text-white')
+                ui.button('Opslaan', on_click=save_edit).classes(
+                    f'mt-4 {BTN_PRIMARY} {BTN_FULL}'
+                )
 
         # ================= TOPBAR =================
         with ui.row().classes('w-full max-w-7xl justify-between items-center mb-6'):
-            # Titel links
             ui.label('Werknemerslijst').classes('text-2xl font-bold')
 
-            # Zoek + Reset rechts
             with ui.row().classes('items-center gap-2'):
                 search_input = ui.input(placeholder='Zoek werknemer...').classes(
                     'w-64 transition-all duration-500 ease-in-out rounded-full px-4'
                 )
                 ui.button('Zoek', on_click=lambda: filter_employees()).classes(
-                    'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700'
+                    f'{BTN_SECONDARY} {BTN_SMALL}'
                 )
                 ui.button('Reset', on_click=lambda: reset_employees()).classes(
-                    'bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300'
+                    f'{BTN_NEUTRAL} {BTN_SMALL}'
                 )
+
+        def open_edit(e):
+            nonlocal current
+            current = e
+            naam.value = e['naam']
+            functie.value = e['functie']
+            expertise.value = e['expertise']
+            email.value = e.get('email', '')
+            location.value = e.get('location', '')
+            language.value = e.get('language', '')
+            work_groups.value = e.get('work_groups', '')
+            hobbies.value = e.get('hobbies', '')
+            mobile_phone.value = e.get('mobile_phone', '')
+            office_phone.value = e.get('office_phone', '')
+            geboorte.value = to_date(e['geboortedatum'])
+            start.value = to_date(e['datum_indienst'])
+            jaren.value = int(e.get('jaren', 0))
+            actief.value = e.get('actief', True)
+            edit_dialog.open()
 
         # ================= GRID =================
         employees = get_employees()
@@ -151,12 +181,11 @@ def employee_tab(parent):
                 with grid:
                     with ui.card().classes(
                         f'w-64 p-4 border-2 rounded shadow hover:scale-105 transition-transform duration-200 {border}'
-                    ):
+                    ).on('click', lambda emp=e: open_details(emp)):
                         ui.label(e['naam']).classes('text-lg font-bold text-center')
                         ui.label('Actief' if actief else 'Niet actief').classes(f'text-sm {kleur} text-center')
                         ui.label(e['functie']).classes('text-sm text-center')
                         ui.label(f"{e['jaren']} jaar ervaring").classes('text-sm text-center')
-                        ui.button('Details', on_click=lambda emp=e: open_details(emp)).classes('mt-3 w-full')
 
         show_employees()
 
@@ -179,7 +208,7 @@ def employee_tab(parent):
         def open_details(e):
             dialog = ui.dialog()
             with dialog, ui.card().classes('w-[900px] max-h-[80vh] overflow-auto p-0'):
-                with ui.row().classes('bg-green-600 text-white p-4 justify-center items-center gap-4'):
+                with ui.row().classes('bg-red-600 text-white p-4 justify-center items-center gap-4'):
                     ui.label(e['naam']).classes('text-2xl font-bold')
                     ui.label('Actief' if e['actief'] else 'Niet actief').classes(
                         'text-lg ' + ('text-green-200' if e['actief'] else 'text-red-400')
@@ -205,9 +234,20 @@ def employee_tab(parent):
                         ui.label(value or '-')
 
                 with ui.row().classes('justify-end gap-3 p-4 border-t'):
-                    ui.button('Bewerken', on_click=lambda: (dialog.close(), open_edit(e)))
-                    ui.button('Verwijderen', color='red', on_click=lambda: (dialog.close(), delete_employee(e['id']), refresh()))
-                    ui.button('Sluiten', on_click=dialog.close)
+                    ui.button(
+                        'Bewerken',
+                        on_click=lambda emp=e: (dialog.close(), open_edit(emp))
+                    ).classes(f'{BTN_PRIMARY} {BTN_SMALL}')
+
+                    ui.button(
+                        'Verwijderen',
+                        on_click=lambda emp=e: (dialog.close(), delete_employee(emp['id']), refresh())
+                    ).classes(f'{BTN_DANGER} {BTN_SMALL}')
+
+                    ui.button(
+                        'Sluiten',
+                        on_click=dialog.close
+                    ).classes(f'{BTN_NEUTRAL} {BTN_SMALL}')
 
             dialog.open()
 
@@ -222,5 +262,11 @@ def employee_tab(parent):
             '+ Nieuwe medewerker',
             on_click=new_dialog.open
         ).classes(
-            'fixed bottom-6 right-6 bg-green-600 text-white font-semibold px-5 py-3 rounded-xl shadow-lg z-50 hover:bg-green-700'
+            'fixed bottom-6 right-6 '
+            '!bg-gradient-to-r from-emerald-600 to-green-700 '
+            '!text-white font-semibold px-5 py-2.5 '
+            'rounded-lg shadow-xl z-50 '
+            'hover:from-emerald-700 hover:to-green-800 '
+            'transition-all duration-200'
         )
+

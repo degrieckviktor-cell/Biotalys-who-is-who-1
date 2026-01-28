@@ -7,17 +7,19 @@ from data_source import get_employees
 ui.add_head_html('<title>Biotalys Employee Dashboard</title>')
 
 # ================== TABS ==================
-with ui.tabs(value='Home').classes(  # Home-tab standaard actief
-    'w-full max-w-7xl mx-auto bg-gray-100 rounded-xl shadow-lg p-1'
-) as tabs:
-    ui.tab('Home').classes(
-        'text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors'
-    )
-    ui.tab('Employees').classes(
-        'text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors'
-    )
-    ui.tab('Functions').classes(
-        'text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors'
+with ui.row().classes(
+    'w-full max-w-7xl mx-auto bg-gray-100 rounded-xl shadow-lg p-1 items-center justify-between'
+):
+    with ui.tabs(value='Home') as tabs:
+        ui.tab('Home').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
+        ui.tab('Employees').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
+        ui.tab('Functions').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
+
+    ui.button(
+        '🔄',
+        on_click=lambda: ui.run_javascript('location.reload()')
+    ).classes(
+        '!bg-gradient-to-r from-emerald-600 to-green-700 !text-white px-3 py-2 text-sm rounded-xl hover:from-emerald-700 hover:to-green-800 mr-2 transition-all duration-200'
     )
 
 # ================== HOME TAB ==================
