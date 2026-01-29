@@ -200,4 +200,18 @@ def update_employee_photo(emp_id, content_bytes, filename):
                 (psycopg.Binary(content_bytes), filename, emp_id)
             )
             conn.commit()
+# ================= FUNCTIE IN GEBRUIK =================
+def functie_in_gebruik(functie_id):
+    """
+    Controleer of er nog employees zijn met deze functie.
+    Geeft True terug als er minstens één employee is met deze functie.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) AS count FROM employees WHERE functie::text = %s",
+                (str(functie_id),)  # cast functie_id naar string
+            )
+            result = cur.fetchone()
+            return result['count'] > 0
 
