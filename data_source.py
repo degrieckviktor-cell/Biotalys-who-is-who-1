@@ -62,7 +62,8 @@ def get_employees():
                     hobbies,
                     work_groups,
                     mobile_phone,
-                    office_phone
+                    office_phone,
+                    photo_data
                 FROM employees
                 ORDER BY id
             """)
@@ -86,9 +87,10 @@ def insert_employee(employee):
                 INSERT INTO employees (
                     naam, functie, expertise, geboortedatum, datum_indienst,
                     actief, jaren, email, location, language, hobbies,
-                    work_groups, mobile_phone, office_phone
+                    work_groups, mobile_phone, office_phone, photo_data
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
             """, (
                 employee['naam'],
                 employee['functie'],
@@ -104,6 +106,7 @@ def insert_employee(employee):
                 employee.get('work_groups'),
                 employee.get('mobile_phone'),
                 employee.get('office_phone'),
+                employee.get('photo_data'),
             ))
             conn.commit()
 
@@ -127,7 +130,8 @@ def update_employee(employee):
                     hobbies = %s,
                     work_groups = %s,
                     mobile_phone = %s,
-                    office_phone = %s
+                    office_phone = %s,
+                    photo_data = %s
                 WHERE id = %s
             """, (
                 employee['naam'],
@@ -144,6 +148,7 @@ def update_employee(employee):
                 employee.get('work_groups'),
                 employee.get('mobile_phone'),
                 employee.get('office_phone'),
+                employee.get('photo_data'),
                 employee['id'],
             ))
             conn.commit()
@@ -186,3 +191,13 @@ def insert_functie(naam):
                 (naam,)
             )
             conn.commit()
+# ================= FOTO UPLOAD =================
+def update_employee_photo(emp_id, content_bytes, filename):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE employees SET photo_data=%s, photo_name=%s WHERE id=%s",
+                (psycopg.Binary(content_bytes), filename, emp_id)
+            )
+            conn.commit()
+

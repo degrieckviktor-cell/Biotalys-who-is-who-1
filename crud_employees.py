@@ -1,5 +1,9 @@
+import base64
 from nicegui import ui
-from data_source import get_employees, insert_employee, update_employee, delete_employee, get_functies
+from data_source import (
+    get_employees, insert_employee, update_employee, delete_employee,
+    get_functies, update_employee_photo
+)
 from datetime import datetime, date
 
 # ================= BUTTON STYLES =================
@@ -35,6 +39,8 @@ def employee_tab(parent):
         # ---------- Nonlocal vars ----------
         current = None
         employees = get_employees()
+        edit_photo_data = {'bytes': None, 'filename': None}
+        new_photo_data = {'bytes': None, 'filename': None}
 
         # ================= POPUPS =================
         # ---------- Edit Dialog ----------
@@ -59,7 +65,16 @@ def employee_tab(parent):
                 jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
                 actief = ui.checkbox('Actief')
 
-                def save_edit():
+                # Foto upload
+                async def upload_edit_photo(event):
+                    file = event.file
+                    edit_photo_data['bytes'] = await file.read()
+                    edit_photo_data['filename'] = file.name
+                    ui.notify(f'Afbeelding geselecteerd: {file.name}', color='green')
+
+                ui.upload(on_upload=upload_edit_photo).classes('w-full')
+
+                async def save_edit():
                     current.update({
                         'naam': naam.value,
                         'functie': functie.value,
@@ -77,8 +92,19 @@ def employee_tab(parent):
                         'actief': actief.value,
                     })
                     update_employee(current)
+
+                    # Foto updaten als er eentje is geselecteerd
+                    if edit_photo_data['bytes']:
+                        update_employee_photo(
+                            current['id'],
+                            edit_photo_data['bytes'],
+                            edit_photo_data['filename']
+                        )
+                        current['photo_data'] = edit_photo_data['bytes']  # direct updaten in lokaal object
+
                     refresh()
                     edit_dialog.close()
+                    ui.notify('Medewerker bijgewerkt!', color='green')
 
                 ui.button('Opslaan', on_click=save_edit).classes(f'{BTN_PRIMARY} {BTN_FULL} mt-4')
 
@@ -104,7 +130,16 @@ def employee_tab(parent):
                 n_jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
                 n_actief = ui.checkbox('Actief', value=True)
 
-                def save_new_employee():
+                # Foto upload
+                async def upload_new_photo(event):
+                    file = event.file
+                    new_photo_data['bytes'] = await file.read()
+                    new_photo_data['filename'] = file.name
+                    ui.notify(f'Afbeelding geselecteerd: {file.name}', color='green')
+
+                ui.upload(on_upload=upload_new_photo).classes('w-full')
+
+                async def save_new_employee():
                     new_emp = {
                         'naam': n_naam.value or '',
                         'functie': n_functie.value or '',
@@ -121,8 +156,22 @@ def employee_tab(parent):
                         'jaren': int(n_jaren.value or 0),
                         'actief': n_actief.value,
                     }
-                    insert_employee(new_emp)
-                    refresh()
+                    emp_id = insert_employee(new_emp)
+
+                    # Foto toevoegen
+                    if new_photo_data['bytes']:
+                        update_employee_photo(
+                            emp_id,
+                            new_photo_data['bytes'],
+                            new_photo_data['filename']
+                        )
+                        new_emp['photo_data'] = new_photo_data['bytes']
+                    else:
+                        new_emp['photo_data'] = None
+
+                    new_emp['id'] = emp_id
+                    employees.append(new_emp)
+                    show_employees()  # direct update in grid
                     new_dialog.close()
                     ui.notify('Nieuwe medewerker toegevoegd!', color='green')
 
@@ -147,6 +196,8 @@ def employee_tab(parent):
             start.value = to_date(e['datum_indienst'])
             jaren.value = int(e.get('jaren', 0))
             actief.value = e.get('actief', True)
+            edit_photo_data['bytes'] = None
+            edit_photo_data['filename'] = None
             edit_dialog.open()
 
         # ================= REFRESH =================
@@ -177,18 +228,29 @@ def employee_tab(parent):
             grid.clear()
             data = employee_list or employees
             for e in data:
-                actief = e['actief']
-                kleur = 'text-green-600' if actief else 'text-red-600'
-                border = 'border-green-500' if actief else 'border-red-500'
+                actief_flag = e['actief']
+                kleur = 'text-green-600' if actief_flag else 'text-red-600'
+                border = 'border-green-500' if actief_flag else 'border-red-500'
+
+                # Foto voorbereiden
+                photo_bytes = e.get('photo_data')
+                if photo_bytes:
+                    photo_b64 = base64.b64encode(photo_bytes).decode('utf-8')
+                    photo_src = f'data:image/png;base64,{photo_b64}'
+                else:
+                    photo_src = 'Afbeeldingen/Lege-profielfoto.webp'
 
                 with grid:
                     with ui.card().classes(
-                        f'w-64 p-4 border-2 rounded shadow hover:scale-105 transition-transform duration-200 {border}'
+                        f'w-80 p-4 border-2 rounded shadow hover:scale-105 transition-transform duration-200 {border}'
                     ).on('click', lambda emp=e: open_details(emp)):
-                        ui.label(e['naam']).classes('text-lg font-bold text-center')
-                        ui.label('Actief' if actief else 'Niet actief').classes(f'text-sm {kleur} text-center')
-                        ui.label(e['functie']).classes('text-sm text-center')
-                        ui.label(f"{e['jaren']} jaar ervaring").classes('text-sm text-center')
+                        with ui.row().classes('gap-4 items-center'):
+                            ui.image(photo_src).classes('w-24 h-24 object-cover rounded')
+                            with ui.column().classes('gap-1'):
+                                ui.label(e['naam']).classes('text-lg font-bold')
+                                ui.label('Actief' if actief_flag else 'Niet actief').classes(f'text-sm {kleur}')
+                                ui.label(e['functie']).classes('text-sm')
+                                ui.label(f"{e['jaren']} jaar ervaring").classes('text-sm')
 
         show_employees()
 
@@ -217,24 +279,34 @@ def employee_tab(parent):
                         'text-lg ' + ('text-green-200' if e['actief'] else 'text-red-400')
                     )
 
-                with ui.grid().classes('grid-cols-2 gap-4 p-6 text-sm'):
-                    items = [
-                        ('🧩 Functie', e['functie']),
-                        ('🕒 Jaren ervaring', e['jaren']),
-                        ('📧 Email', e.get('email')),
-                        ('📍 Location', e.get('location')),
-                        ('🌍 Language', e.get('language')),
-                        ('👥 Work groups', e.get('work_groups')),
-                        ('🎯 Hobbies', e.get('hobbies')),
-                        ('📱 Mobile phone', e.get('mobile_phone')),
-                        ('☎️ Office phone', e.get('office_phone')),
-                        ('🎂 Geboortedatum', to_str(e['geboortedatum'])),
-                        ('🗓️ Datum indienst', to_str(e['datum_indienst'])),
-                        ('💼 Expertise', e['expertise']),
-                    ]
-                    for label, value in items:
-                        ui.label(label).classes('font-semibold')
-                        ui.label(value or '-')
+                with ui.row().classes('p-6 gap-6'):
+                    # Foto in details
+                    photo_bytes = e.get('photo_data')
+                    if photo_bytes:
+                        photo_src = f"data:image/png;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                    else:
+                        photo_src = 'Afbeeldingen/Lege-profielfoto.webp'
+                    ui.image(photo_src).classes('w-48 h-48 object-cover rounded')
+
+                    # Details
+                    with ui.column().classes('gap-1 text-sm'):
+                        items = [
+                            ('🧩 Functie', e['functie']),
+                            ('🕒 Jaren ervaring', e['jaren']),
+                            ('📧 Email', e.get('email')),
+                            ('📍 Location', e.get('location')),
+                            ('🌍 Language', e.get('language')),
+                            ('👥 Work groups', e.get('work_groups')),
+                            ('🎯 Hobbies', e.get('hobbies')),
+                            ('📱 Mobile phone', e.get('mobile_phone')),
+                            ('☎️ Office phone', e.get('office_phone')),
+                            ('🎂 Geboortedatum', to_str(e['geboortedatum'])),
+                            ('🗓️ Datum indienst', to_str(e['datum_indienst'])),
+                            ('💼 Expertise', e['expertise']),
+                        ]
+                        for label, value in items:
+                            ui.label(label).classes('font-semibold')
+                            ui.label(value or '-')
 
                 with ui.row().classes('justify-end gap-3 p-4 border-t'):
                     ui.button('Bewerken', on_click=lambda emp=e: (dialog.close(), open_edit(emp))).classes(f'{BTN_PRIMARY} {BTN_SMALL}')
