@@ -64,7 +64,8 @@ def get_employees():
                     mobile_phone,
                     office_phone,
                     photo_data,
-                    achternaam
+                    achternaam,
+                    manager_id
                 FROM employees
                 ORDER BY id
             """)
@@ -88,9 +89,9 @@ def insert_employee(employee):
                 INSERT INTO employees (
                     naam, functie, expertise, geboortedatum, datum_indienst,
                     actief, jaren, email, location, language, hobbies,
-                    work_groups, mobile_phone, office_phone, photo_data,achternaam
+                    work_groups, mobile_phone, office_phone, photo_data,achternaam, manager_id
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 employee['naam'],
@@ -109,6 +110,7 @@ def insert_employee(employee):
                 employee.get('office_phone'),
                 employee.get('photo_data'),
                 employee.get('achternaam'),
+                employee.get('manager_id'),
             ))
             conn.commit()
 
@@ -134,7 +136,8 @@ def update_employee(employee):
                     mobile_phone = %s,
                     office_phone = %s,
                     photo_data = %s,
-                    achternaam = %s
+                    achternaam = %s,
+                    manager_id = %s
                 WHERE id = %s
             """, (
                 employee['naam'],
@@ -153,6 +156,7 @@ def update_employee(employee):
                 employee.get('office_phone'),
                 employee.get('photo_data'),
                 employee.get('achternaam'),
+                employee.get('manager_id'),
                 employee['id'],
             ))
             conn.commit()
@@ -219,3 +223,14 @@ def functie_in_gebruik(functie_id):
             result = cur.fetchone()
             return result['count'] > 0
 
+def get_manager_options(employees):
+    """
+    Geeft een lijst met managers voor dropdown.
+    Format: [{'value': id, 'label': 'Achternaam, Voornaam'}]
+    Eerste optie is geen manager.
+    """
+    options = [{'value': None, 'label': '- Geen manager -'}]
+    for emp in employees:
+        label = f"{emp.get('achternaam')}, {emp.get('naam')}"
+        options.append({'value': emp['id'], 'label': label})
+    return options

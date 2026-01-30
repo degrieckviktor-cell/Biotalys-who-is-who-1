@@ -1,9 +1,10 @@
 from nicegui import ui
 from crud_employees import employee_tab
 from crud_functions import functions_tab
+from Tree import org_tree_tab  # <-- Tree-tab toegevoegd
 from data_source import get_employees
+
 ui.add_head_html('<link rel="stylesheet" href="Globale.css">')
-# ================== PAGE TITLE ==================
 ui.add_head_html('<title>Biotalys Employee Dashboard</title>')
 
 # ================== TABS ==================
@@ -14,25 +15,24 @@ with ui.row().classes(
         ui.tab('Home').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
         ui.tab('Employees').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
         ui.tab('Functions').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')
+        ui.tab('Tree').classes('text-lg font-semibold px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors')  # Nieuwe Tree-tab
 
     ui.button(
-    '🔄',
-    on_click=lambda: ui.run_javascript('location.reload()')
-).classes(
-    '!bg-gray-200 !text-gray-800 hover:!bg-gray-300 px-3 py-2 text-sm rounded-xl mr-2 transition-all duration-200'
-)
-
+        '🔄',
+        on_click=lambda: ui.run_javascript('location.reload()')
+    ).classes(
+        '!bg-gray-200 !text-gray-800 hover:!bg-gray-300 px-3 py-2 text-sm rounded-xl mr-2 transition-all duration-200'
+    )
 
 # ================== HOME TAB ==================
 with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
         .classes('items-center w-full mt-6'):
 
-    # Logo bovenaan, grotere cirkel
+    # Logo bovenaan
     ui.image('Afbeeldingen/BTLS.BR-54d7a278.png').classes(
         'w-48 h-48 rounded-full shadow-lg border-4 border-green-600 mx-auto mb-4'
     )
 
-    # Subtitel
     ui.label("Welkom op het Biotalys Who is Who Dashboard.").classes(
         'text-2xl font-semibold text-center mb-2 text-gray-800'
     )
@@ -40,13 +40,11 @@ with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
         'text-center text-gray-600 mb-6'
     )
 
-    # Statistiek-kaarten
     from data_source import get_functies
 
     employees = get_employees()
     totaal = len(employees)
-
-    functies = get_functies()  # haalt nu alle functies uit de functies-tabel
+    functies = get_functies()
     aantal_functies = len(functies)
 
     with ui.row().classes('gap-6 justify-center'):
@@ -58,12 +56,14 @@ with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
             ui.label('Aantal functies').classes('text-center font-semibold text-gray-800')
             ui.label(f"{aantal_functies}").classes('text-center text-xl font-bold text-gray-900')
 
-
 # ================== EMPLOYEES TAB ==================
-employee_tab(tabs)  # Nieuwe medewerker knop alleen hier zichtbaar
+employee_tab(tabs)
 
 # ================== FUNCTIONS TAB ==================
-functions_tab(tabs)  # Blauwe kaarten met bulletpoints en hover-effect
+functions_tab(tabs)
+
+# ================== TREE TAB ==================
+org_tree_tab(tabs)  # Organigram met lazy loading
 
 # ================== FOOTER ==================
 ui.label('© 2026 Biotalys').classes('text-center text-gray-500 mt-8 mb-6')

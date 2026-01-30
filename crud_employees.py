@@ -2,7 +2,7 @@ import base64
 from nicegui import ui
 from data_source import (
     get_employees, insert_employee, update_employee, delete_employee,
-    get_functies, update_employee_photo
+    get_functies, update_employee_photo, get_manager_options
 )
 from datetime import datetime, date
 
@@ -13,6 +13,7 @@ BTN_NEUTRAL = '!bg-gray-200 !text-gray-800 hover:!bg-gray-300 rounded-lg'
 BTN_DANGER = '!bg-red-600 !text-white hover:!bg-red-700 rounded-lg'
 BTN_SMALL = 'px-4 py-2'
 BTN_FULL = 'w-full px-4 py-2'
+
 
 def employee_tab(parent):
 
@@ -50,9 +51,18 @@ def employee_tab(parent):
                 ui.label('Werknemer bewerken').classes('text-xl font-bold')
 
             with ui.column().classes('p-6 gap-3 items-center'):
-                naam = ui.input('Voornaam').classes('w-full')
+                naam = ui.input('Naam').classes('w-full')
                 achternaam = ui.input('Achternaam').classes('w-full')
                 functie = ui.select([], label='Functie').classes('w-full')
+
+                manager_options = get_manager_options(employees)
+                manager_labels = [opt['label'] for opt in manager_options]
+                manager_select = ui.select(
+                    options=manager_labels,
+                    label='Manager',
+                    value=manager_labels[0]
+                ).classes('w-full')
+
                 expertise = ui.input('Expertise').classes('w-full')
                 email = ui.input('Email').classes('w-full')
                 location = ui.input('Location').classes('w-full')
@@ -66,7 +76,6 @@ def employee_tab(parent):
                 jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
                 actief = ui.checkbox('Actief')
 
-                # Foto upload
                 async def upload_edit_photo(event):
                     file = event.file
                     edit_photo_data['bytes'] = await file.read()
@@ -76,27 +85,18 @@ def employee_tab(parent):
                 ui.upload(on_upload=upload_edit_photo).classes('w-full')
 
                 async def save_edit():
-                    valid = True
-                    # Validatie voornaam
-                    if not naam.value.strip():
-                        naam.classes('w-full border-red-500')
-                        valid = False
-                    else:
-                        naam.classes('w-full')
-                    # Validatie achternaam
-                    if not achternaam.value.strip():
-                        achternaam.classes('w-full border-red-500')
-                        valid = False
-                    else:
-                        achternaam.classes('w-full')
-                    if not valid:
-                        ui.notify('Voornaam en achternaam zijn verplicht!', color='red')
+                    if not naam.value.strip() or not achternaam.value.strip():
+                        ui.notify('Naam en achternaam zijn verplicht!', color='red')
                         return
 
+                    selected_index = manager_labels.index(manager_select.value)
+                    selected_manager_id = manager_options[selected_index]['value']
+
                     current.update({
-                        'naam': naam.value.strip(),
-                        'achternaam': achternaam.value.strip(),
+                        'naam': naam.value,
+                        'achternaam': achternaam.value,
                         'functie': functie.value,
+                        'manager_id': selected_manager_id,
                         'expertise': expertise.value,
                         'email': email.value,
                         'location': location.value,
@@ -120,6 +120,11 @@ def employee_tab(parent):
                         )
                         current['photo_data'] = edit_photo_data['bytes']
 
+                    for i, emp in enumerate(employees):
+                        if emp['id'] == current['id']:
+                            employees[i] = current
+                            break
+
                     refresh()
                     edit_dialog.close()
                     ui.notify('Medewerker bijgewerkt!', color='green')
@@ -133,9 +138,18 @@ def employee_tab(parent):
                 ui.label('Nieuwe medewerker').classes('text-xl font-bold')
 
             with ui.column().classes('p-6 gap-3 items-center'):
-                n_naam = ui.input('Voornaam').classes('w-full')
+                n_naam = ui.input('Naam').classes('w-full')
                 n_achternaam = ui.input('Achternaam').classes('w-full')
                 n_functie = ui.select(get_fun_options(), label='Functie').classes('w-full')
+
+                n_manager_options = get_manager_options(employees)
+                n_manager_labels = [opt['label'] for opt in n_manager_options]
+                n_manager_select = ui.select(
+                    options=n_manager_labels,
+                    label='Manager',
+                    value=n_manager_labels[0]
+                ).classes('w-full')
+
                 n_expertise = ui.input('Expertise').classes('w-full')
                 n_email = ui.input('Email').classes('w-full')
                 n_location = ui.input('Location').classes('w-full')
@@ -149,7 +163,6 @@ def employee_tab(parent):
                 n_jaren = ui.number('Jaren ervaring', min=0, max=55).classes('w-full')
                 n_actief = ui.checkbox('Actief', value=True)
 
-                # Foto upload
                 async def upload_new_photo(event):
                     file = event.file
                     new_photo_data['bytes'] = await file.read()
@@ -159,25 +172,18 @@ def employee_tab(parent):
                 ui.upload(on_upload=upload_new_photo).classes('w-full')
 
                 async def save_new_employee():
-                    valid = True
-                    if not n_naam.value.strip():
-                        n_naam.classes('w-full border-red-500')
-                        valid = False
-                    else:
-                        n_naam.classes('w-full')
-                    if not n_achternaam.value.strip():
-                        n_achternaam.classes('w-full border-red-500')
-                        valid = False
-                    else:
-                        n_achternaam.classes('w-full')
-                    if not valid:
-                        ui.notify('Voornaam en achternaam zijn verplicht!', color='red')
+                    if not n_naam.value.strip() or not n_achternaam.value.strip():
+                        ui.notify('Naam en achternaam zijn verplicht!', color='red')
                         return
 
+                    selected_index = n_manager_labels.index(n_manager_select.value)
+                    selected_manager_id = n_manager_options[selected_index]['value']
+
                     new_emp = {
-                        'naam': n_naam.value.strip(),
-                        'achternaam': n_achternaam.value.strip(),
+                        'naam': n_naam.value or '',
+                        'achternaam': n_achternaam.value or '',
                         'functie': n_functie.value or '',
+                        'manager_id': selected_manager_id,
                         'expertise': n_expertise.value or '',
                         'email': n_email.value or '',
                         'location': n_location.value or '',
@@ -191,6 +197,7 @@ def employee_tab(parent):
                         'jaren': int(n_jaren.value or 0),
                         'actief': n_actief.value,
                     }
+
                     emp_id = insert_employee(new_emp)
 
                     if new_photo_data['bytes']:
@@ -205,20 +212,46 @@ def employee_tab(parent):
 
                     new_emp['id'] = emp_id
                     employees.append(new_emp)
+
+                    # 🔥 Update manager dropdowns live
+                    update_manager_dropdowns()
+
                     show_employees()
                     new_dialog.close()
                     ui.notify('Nieuwe medewerker toegevoegd!', color='green')
 
                 ui.button('Opslaan', on_click=save_new_employee).classes(f'{BTN_PRIMARY} {BTN_FULL} mt-4')
 
+        # ================= MANAGER DROPDOWNS UPDATE =================
+        def update_manager_dropdowns():
+            manager_options[:] = get_manager_options(employees)
+            manager_labels[:] = [opt['label'] for opt in manager_options]
+            manager_select.options = manager_labels
+            manager_select.value = manager_labels[0]
+
+            n_manager_options[:] = get_manager_options(employees)
+            n_manager_labels[:] = [opt['label'] for opt in n_manager_options]
+            n_manager_select.options = n_manager_labels
+            n_manager_select.value = n_manager_labels[0]
+
         # ================= OPEN EDIT FUNCTION =================
         def open_edit(e):
             nonlocal current
             current = e
             naam.value = e['naam']
-            achternaam.value = e.get('achternaam', '')
+            achternaam.value = e['achternaam']
             functie.options = get_fun_options()
             functie.value = e['functie']
+
+            update_manager_dropdowns()
+
+            current_manager_id = e.get('manager_id')
+            selected_label = next(
+                (opt['label'] for opt in manager_options if opt['value'] == current_manager_id),
+                manager_labels[0]
+            )
+            manager_select.value = selected_label
+
             expertise.value = e['expertise']
             email.value = e.get('email', '')
             location.value = e.get('location', '')
@@ -244,7 +277,6 @@ def employee_tab(parent):
         # ================= TOPBAR =================
         with ui.row().classes('w-full max-w-7xl justify-between items-center mb-6'):
             ui.label('Werknemerslijst').classes('text-2xl font-bold')
-
             with ui.row().classes('items-center gap-2'):
                 search_input = ui.input(placeholder='Zoek werknemer...').classes(
                     'w-64 transition-all duration-500 ease-in-out rounded-full px-4'
@@ -267,7 +299,6 @@ def employee_tab(parent):
                 kleur = 'text-green-600' if actief_flag else 'text-red-600'
                 border = 'border-green-500' if actief_flag else 'border-red-500'
 
-                # Foto voorbereiden
                 photo_bytes = e.get('photo_data')
                 if photo_bytes:
                     photo_b64 = base64.b64encode(photo_bytes).decode('utf-8')
@@ -282,7 +313,7 @@ def employee_tab(parent):
                         with ui.row().classes('gap-4 items-center'):
                             ui.image(photo_src).classes('w-24 h-24 object-cover rounded')
                             with ui.column().classes('gap-1'):
-                                ui.label(f"{e['naam']} {e.get('achternaam', '')}").classes('text-lg font-bold')
+                                ui.label(f"{e['naam']} {e['achternaam']}").classes('text-lg font-bold')
                                 ui.label('Actief' if actief_flag else 'Niet actief').classes(f'text-sm {kleur}')
                                 ui.label(e['functie']).classes('text-sm')
                                 ui.label(f"{e['jaren']} jaar ervaring").classes('text-sm')
@@ -292,10 +323,27 @@ def employee_tab(parent):
         # ================= SEARCH / RESET =================
         def filter_employees(e=None):
             query = search_input.value.lower().strip()
+
+            # 🔥 Easter Egg: Marijke Bastiaen
+            if query == 'marijke bastiaen':
+                ui.run_javascript("""
+                if (typeof confetti === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+                    script.onload = () => { confetti({ particleCount: 200, spread: 100 }); };
+                    document.head.appendChild(script);
+                } else {
+                    confetti({ particleCount: 200, spread: 100 });
+                }
+                """)
+
             if not query:
                 show_employees(employees)
             else:
-                filtered = [emp for emp in employees if query in emp['naam'].lower() or query in emp.get('achternaam','').lower()]
+                filtered = [
+                    emp for emp in employees
+                    if query in emp['naam'].lower() or query in emp['achternaam'].lower()
+                ]
                 show_employees(filtered)
 
         def reset_employees():
@@ -309,13 +357,12 @@ def employee_tab(parent):
             dialog = ui.dialog()
             with dialog, ui.card().classes('w-[900px] max-h-[80vh] overflow-auto p-0'):
                 with ui.row().classes('bg-red-600 text-white p-4 justify-center items-center gap-4'):
-                    ui.label(f"{e['naam']} {e.get('achternaam', '')}").classes('text-2xl font-bold')
+                    ui.label(f"{e['naam']} {e['achternaam']}").classes('text-2xl font-bold')
                     ui.label('Actief' if e['actief'] else 'Niet actief').classes(
                         'text-lg ' + ('text-green-200' if e['actief'] else 'text-red-400')
                     )
 
                 with ui.row().classes('p-6 gap-6'):
-                    # Foto in details
                     photo_bytes = e.get('photo_data')
                     if photo_bytes:
                         photo_src = f"data:image/png;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
@@ -323,10 +370,15 @@ def employee_tab(parent):
                         photo_src = 'Afbeeldingen/Lege-profielfoto.webp'
                     ui.image(photo_src).classes('w-48 h-48 object-cover rounded')
 
-                    # Details
+                    manager_label = next(
+                        (f"{emp['achternaam']}, {emp['naam']}" for emp in employees if emp['id'] == e.get('manager_id')),
+                        '- Geen manager -'
+                    )
+
                     with ui.column().classes('gap-1 text-sm'):
                         items = [
                             ('🧩 Functie', e['functie']),
+                            ('👔 Manager', manager_label),
                             ('🕒 Jaren ervaring', e['jaren']),
                             ('📧 Email', e.get('email')),
                             ('📍 Location', e.get('location')),
