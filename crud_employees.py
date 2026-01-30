@@ -50,7 +50,8 @@ def employee_tab(parent):
                 ui.label('Werknemer bewerken').classes('text-xl font-bold')
 
             with ui.column().classes('p-6 gap-3 items-center'):
-                naam = ui.input('Naam').classes('w-full')
+                naam = ui.input('Voornaam').classes('w-full')
+                achternaam = ui.input('Achternaam').classes('w-full')
                 functie = ui.select([], label='Functie').classes('w-full')
                 expertise = ui.input('Expertise').classes('w-full')
                 email = ui.input('Email').classes('w-full')
@@ -75,8 +76,26 @@ def employee_tab(parent):
                 ui.upload(on_upload=upload_edit_photo).classes('w-full')
 
                 async def save_edit():
+                    valid = True
+                    # Validatie voornaam
+                    if not naam.value.strip():
+                        naam.classes('w-full border-red-500')
+                        valid = False
+                    else:
+                        naam.classes('w-full')
+                    # Validatie achternaam
+                    if not achternaam.value.strip():
+                        achternaam.classes('w-full border-red-500')
+                        valid = False
+                    else:
+                        achternaam.classes('w-full')
+                    if not valid:
+                        ui.notify('Voornaam en achternaam zijn verplicht!', color='red')
+                        return
+
                     current.update({
-                        'naam': naam.value,
+                        'naam': naam.value.strip(),
+                        'achternaam': achternaam.value.strip(),
                         'functie': functie.value,
                         'expertise': expertise.value,
                         'email': email.value,
@@ -93,14 +112,13 @@ def employee_tab(parent):
                     })
                     update_employee(current)
 
-                    # Foto updaten als er eentje is geselecteerd
                     if edit_photo_data['bytes']:
                         update_employee_photo(
                             current['id'],
                             edit_photo_data['bytes'],
                             edit_photo_data['filename']
                         )
-                        current['photo_data'] = edit_photo_data['bytes']  # direct updaten in lokaal object
+                        current['photo_data'] = edit_photo_data['bytes']
 
                     refresh()
                     edit_dialog.close()
@@ -115,7 +133,8 @@ def employee_tab(parent):
                 ui.label('Nieuwe medewerker').classes('text-xl font-bold')
 
             with ui.column().classes('p-6 gap-3 items-center'):
-                n_naam = ui.input('Naam').classes('w-full')
+                n_naam = ui.input('Voornaam').classes('w-full')
+                n_achternaam = ui.input('Achternaam').classes('w-full')
                 n_functie = ui.select(get_fun_options(), label='Functie').classes('w-full')
                 n_expertise = ui.input('Expertise').classes('w-full')
                 n_email = ui.input('Email').classes('w-full')
@@ -140,8 +159,24 @@ def employee_tab(parent):
                 ui.upload(on_upload=upload_new_photo).classes('w-full')
 
                 async def save_new_employee():
+                    valid = True
+                    if not n_naam.value.strip():
+                        n_naam.classes('w-full border-red-500')
+                        valid = False
+                    else:
+                        n_naam.classes('w-full')
+                    if not n_achternaam.value.strip():
+                        n_achternaam.classes('w-full border-red-500')
+                        valid = False
+                    else:
+                        n_achternaam.classes('w-full')
+                    if not valid:
+                        ui.notify('Voornaam en achternaam zijn verplicht!', color='red')
+                        return
+
                     new_emp = {
-                        'naam': n_naam.value or '',
+                        'naam': n_naam.value.strip(),
+                        'achternaam': n_achternaam.value.strip(),
                         'functie': n_functie.value or '',
                         'expertise': n_expertise.value or '',
                         'email': n_email.value or '',
@@ -158,7 +193,6 @@ def employee_tab(parent):
                     }
                     emp_id = insert_employee(new_emp)
 
-                    # Foto toevoegen
                     if new_photo_data['bytes']:
                         update_employee_photo(
                             emp_id,
@@ -171,7 +205,7 @@ def employee_tab(parent):
 
                     new_emp['id'] = emp_id
                     employees.append(new_emp)
-                    show_employees()  # direct update in grid
+                    show_employees()
                     new_dialog.close()
                     ui.notify('Nieuwe medewerker toegevoegd!', color='green')
 
@@ -182,6 +216,7 @@ def employee_tab(parent):
             nonlocal current
             current = e
             naam.value = e['naam']
+            achternaam.value = e.get('achternaam', '')
             functie.options = get_fun_options()
             functie.value = e['functie']
             expertise.value = e['expertise']
@@ -247,7 +282,7 @@ def employee_tab(parent):
                         with ui.row().classes('gap-4 items-center'):
                             ui.image(photo_src).classes('w-24 h-24 object-cover rounded')
                             with ui.column().classes('gap-1'):
-                                ui.label(e['naam']).classes('text-lg font-bold')
+                                ui.label(f"{e['naam']} {e.get('achternaam', '')}").classes('text-lg font-bold')
                                 ui.label('Actief' if actief_flag else 'Niet actief').classes(f'text-sm {kleur}')
                                 ui.label(e['functie']).classes('text-sm')
                                 ui.label(f"{e['jaren']} jaar ervaring").classes('text-sm')
@@ -260,7 +295,7 @@ def employee_tab(parent):
             if not query:
                 show_employees(employees)
             else:
-                filtered = [emp for emp in employees if query in emp['naam'].lower()]
+                filtered = [emp for emp in employees if query in emp['naam'].lower() or query in emp.get('achternaam','').lower()]
                 show_employees(filtered)
 
         def reset_employees():
@@ -274,7 +309,7 @@ def employee_tab(parent):
             dialog = ui.dialog()
             with dialog, ui.card().classes('w-[900px] max-h-[80vh] overflow-auto p-0'):
                 with ui.row().classes('bg-red-600 text-white p-4 justify-center items-center gap-4'):
-                    ui.label(e['naam']).classes('text-2xl font-bold')
+                    ui.label(f"{e['naam']} {e.get('achternaam', '')}").classes('text-2xl font-bold')
                     ui.label('Actief' if e['actief'] else 'Niet actief').classes(
                         'text-lg ' + ('text-green-200' if e['actief'] else 'text-red-400')
                     )

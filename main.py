@@ -33,7 +33,7 @@ with ui.column().bind_visibility_from(tabs, 'value', lambda v: v == 'Home')\
     )
 
     # Subtitel
-    ui.label("Welkom op het Biotalys Werknemers Dashboard!").classes(
+    ui.label("Welkom op het Biotalys Who is Who Dashboard.").classes(
         'text-2xl font-semibold text-center mb-2 text-gray-800'
     )
     ui.label("Gebruik de tabs bovenaan om medewerkers en functies te bekijken.").classes(
@@ -69,4 +69,4 @@ functions_tab(tabs)  # Blauwe kaarten met bulletpoints en hover-effect
 ui.label('© 2026 Biotalys').classes('text-center text-gray-500 mt-8 mb-6')
 
 # ================== START UI ==================
-ui.run(title='Biotalys Employee Dashboard')
+ui.run(title='Biotalys Who is Who')

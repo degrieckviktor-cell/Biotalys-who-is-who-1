@@ -63,7 +63,8 @@ def get_employees():
                     work_groups,
                     mobile_phone,
                     office_phone,
-                    photo_data
+                    photo_data,
+                    achternaam
                 FROM employees
                 ORDER BY id
             """)
@@ -87,9 +88,9 @@ def insert_employee(employee):
                 INSERT INTO employees (
                     naam, functie, expertise, geboortedatum, datum_indienst,
                     actief, jaren, email, location, language, hobbies,
-                    work_groups, mobile_phone, office_phone, photo_data
+                    work_groups, mobile_phone, office_phone, photo_data,achternaam
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 employee['naam'],
@@ -107,6 +108,7 @@ def insert_employee(employee):
                 employee.get('mobile_phone'),
                 employee.get('office_phone'),
                 employee.get('photo_data'),
+                employee.get('achternaam'),
             ))
             conn.commit()
 
@@ -131,7 +133,8 @@ def update_employee(employee):
                     work_groups = %s,
                     mobile_phone = %s,
                     office_phone = %s,
-                    photo_data = %s
+                    photo_data = %s,
+                    achternaam = %s
                 WHERE id = %s
             """, (
                 employee['naam'],
@@ -149,6 +152,7 @@ def update_employee(employee):
                 employee.get('mobile_phone'),
                 employee.get('office_phone'),
                 employee.get('photo_data'),
+                employee.get('achternaam'),
                 employee['id'],
             ))
             conn.commit()
