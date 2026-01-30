@@ -24,38 +24,45 @@ def org_tree_tab(parent):
             dialog.open()
 
         # ---------------- NODE FUNCTION ----------------
-        def add_node(parent_container, emp):
+        def add_node(parent_container, emp, level=0):
             children = [e for e in employees if e.get('manager_id') == emp['id']]
             is_open = {'value': False}
 
             with parent_container:
-                with ui.row().classes('items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded'):
-                    # Naam label → alleen popup
-                    ui.label(f"{emp['naam']} ({emp['functie']})").classes(
-                        'cursor-pointer'
-                    ).on('click', lambda e, emp=emp: show_info(emp))
+                # Node row
+                with ui.row().classes('items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded') as node_row:
+                    # Naam label → opent details popup
+                    ui.label(f"{emp['naam']} ({emp['functie']})").classes('cursor-pointer').on(
+                        'click', lambda e, emp=emp: show_info(emp)
+                    )
 
-                    # Container voor pijltje die de rest van de ruimte vult
+                    # Pijltje rechts van de naam
+                    arrow = None
                     if children:
-                        with ui.row().classes('flex-1 justify-start items-center cursor-pointer') as toggle_area:
-                            arrow = ui.label('▶').classes('font-bold mr-1')
+                        arrow = ui.label('▶').classes('cursor-pointer font-bold')
+                        # Klikbaar gebied: de hele rij
+                        node_row.on('click', lambda e, arr=arrow, cont=None: toggle_children(arr, child_container))
 
-                            def toggle(e):
-                                if not is_open['value']:
-                                    child_container.style('max-height:1000px')
-                                    arrow.set_text('▼')
-                                else:
-                                    child_container.style('max-height:0px')
-                                    arrow.set_text('▶')
-                                is_open['value'] = not is_open['value']
+                # Children container
+                with ui.column().classes('gap-1 overflow-hidden transition-all duration-300') as child_container:
+                    # start ingeklapt
+                    child_container.style(f'max-height:0px; margin-left:{(level+1)*20}px')
 
-                            toggle_area.on('click', toggle)
-
-                # Child container
-                with ui.column().classes('ml-6 gap-1 overflow-hidden transition-all duration-300') as child_container:
-                    child_container.style('max-height:0px')
+                    # Voeg kinderen toe
                     for child in children:
-                        add_node(child_container, child)
+                        add_node(child_container, child, level=level+1)
+
+            # ---------------- TOGGLE FUNCTION ----------------
+            def toggle_children(arrow, container):
+                if not is_open['value']:
+                    # openklappen
+                    container.style(f'max-height:1000px; margin-left:{(level+1)*20}px')
+                    arrow.set_text('▼')
+                else:
+                    # inklappen
+                    container.style(f'max-height:0px; margin-left:{(level+1)*20}px')
+                    arrow.set_text('▶')
+                is_open['value'] = not is_open['value']
 
         # ---------------- TREE CONTAINER ----------------
         tree_container = ui.column().classes('w-full max-w-3xl border rounded shadow p-2 gap-1')
